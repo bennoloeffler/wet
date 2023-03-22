@@ -1,5 +1,4 @@
 #### TODOs
-- add to github
 - bug: dont react to touch, when timer is running
 - bug: does not play sound on ios, may be solved  
   - by: interaction, when pressing start first time
