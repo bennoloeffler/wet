@@ -1,0 +1,182 @@
+@charset "utf-8";
+
+// Import a Google Font
+@import url('https://fonts.googleapis.com/css?family=Nunito:400,700');
+@import url('https://fonts.googleapis.com/css2?family=Dosis:wght@200&family=Genos:wght@200&family=Titillium+Web:wght@300&display=swap');
+
+//$body-size: 20px !default;
+
+
+// Set your brand colors
+//$purple: #8A4D76;
+//$pink: #FA7C91;
+//$brown: #757763;
+//$beige-light: #D0D1CD;
+//$beige-lighter: #EFF0EB;
+
+// Update Bulma's global variables
+$family-sans-serif: "Titillium Web", sans-serif;
+//$grey-dark: $brown;
+//$grey-light: $beige-light;
+//$primary: $brown;
+//$link: $pink;
+//$widescreen-enabled: false;
+//$fullhd-enabled: false;
+
+// Update some of Bulma's component variables
+//$body-background-color: $beige-lighter;
+//$control-border-width: 2px;
+//$input-border-color: transparent;
+//$input-shadow: none;
+
+// Disable the widescreen breakpoint
+//$widescreen-enabled: false;
+
+// Disable the fullhd breakpoint
+//$fullhd-enabled: false;
+
+// Import only what you need from Bulma
+// @import "../../node_modules/bulma/sass/utilities/_all.sass";
+// @import "../../node_modules/bulma/sass/base/_all.sass";
+// @import "../../node_modules/bulma/sass/elements/button.sass";
+// @import "../../node_modules/bulma/sass/elements/container.sass";
+// @import "../../node_modules/bulma/sass/elements/title.sass";
+// @import "../../node_modules/bulma/sass/form/_all.sass";
+// @import "../../node_modules/bulma/sass/components/navbar.sass";
+// @import "../../node_modules/bulma/sass/layout/hero.sass";
+// @import "../../node_modules/bulma/sass/layout/section.sass";
+
+@import "../../node_modules/bulma/bulma.sass";
+//@import "../../node_modules/bulma-extensions/bulma-slider/src/sass/index.sass";
+//@import "../../node_modules/bulma-extensions/src/sass/index.sass";
+
+
+html, body {
+-webkit-user-select: none;
+           -khtml-user-select: none;
+           -moz-user-select: none;
+           -ms-user-select: none;
+           user-select: none;
+           outline: none;
+}
+
+.timer-frame {
+  //margin: 10px;
+  margin-top: 10px;
+}
+
+
+
+.wallclocktime {
+  font-size: 7vw;
+  color: #d3d3d3;
+  //height:100%;
+  //height:100vh;
+    -webkit-touch-callout: none; /* iOS Safari */
+      -webkit-user-select: none; /* Safari */
+       -khtml-user-select: none; /* Konqueror HTML */
+         -moz-user-select: none; /* Firefox */
+          -ms-user-select: none; /* Internet Explorer/Edge */
+              user-select: none; /* Non-prefixed version, currently
+                                    supported by Chrome and Opera */
+
+}
+
+//.slidecontainer {
+//  width: 90%; /* Width of the outside container */
+//}
+
+/* The slider itself */
+.bel-slider {
+  -webkit-appearance: none;  /* Override default CSS styles */
+  appearance: none;
+  width: 100%; /* Full-width */
+  height: 10px; /* Specified height */
+  background: #d3d3d3; /* Grey background */
+  border-radius: 5px;
+  outline: none; /* Remove outline */
+  opacity: 0.7; /* Set transparency (for mouse-over effects on hover) */
+  -webkit-transition: .2s; /* 0.2 seconds transition on hover */
+  transition: opacity .2s;
+}
+
+/* Mouse-over effects */
+.bel-slider:hover {
+  opacity: 1; /* Fully shown on mouse-over */
+}
+
+/* The slider handle (use -webkit- (Chrome, Opera, Safari, Edge) and -moz- (Firefox) to override default look) */
+.bel-slider::-webkit-slider-thumb {
+  -webkit-appearance: none; /* Override default look */
+  appearance: none;
+  width: 40px; /* Set a specific slider handle width */
+  height: 40px; /* Slider handle height */
+  border-radius: 50%;
+  background: #FF0000; /* Green background */
+  cursor: pointer; /* Cursor on hover */
+}
+
+.bel-slider::-moz-range-thumb {
+  width: 40px; /* Set a specific slider handle width */
+  height: 40px; /* Slider handle height */
+  border-radius: 50%;
+  background: #04AA6D; /* Green background */
+  cursor: pointer; /* Cursor on hover */
+}
+
+/* disabled */
+.bel-slider:disabled::-webkit-slider-thumb {
+
+  background: #d3d3d3; /* Green background */
+  cursor: auto; /* Cursor on hover */
+}
+
+.bel-slider::-moz-range-thumb {
+  width: 40px; /* Set a specific slider handle width */
+  height: 40px; /* Slider handle height */
+  border-radius: 50%;
+  background: #04AA6D; /* Green background */
+  cursor: pointer; /* Cursor on hover */
+}
+
+
+
+text { // need both to prevent selecting from inside and from outside
+ user-select: none;
+ pointer-events: none;
+  //background: #04AA6D;
+   -webkit-touch-callout: none; /* iOS Safari */
+     -webkit-user-select: none; /* Safari */
+      -khtml-user-select: none; /* Konqueror HTML */
+        -moz-user-select: none; /* Firefox */
+         -ms-user-select: none; /* Internet Explorer/Edge */
+             user-select: none; /* Non-prefixed version, currently
+                                   supported by Chrome and Opera */
+touch-action: none;
+}
+
+.prevent-select {
+ //background: #04AA6D;
+  -webkit-touch-callout: none; /* iOS Safari */
+    -webkit-user-select: none; /* Safari */
+     -khtml-user-select: none; /* Konqueror HTML */
+       -moz-user-select: none; /* Firefox */
+        -ms-user-select: none; /* Internet Explorer/Edge */
+            user-select: none; /* Non-prefixed version, currently
+                                  supported by Chrome and Opera */
+touch-action: none;
+}
+
+.timer-svg {
+ //background: #04AA6D;
+  -webkit-touch-callout: none; /* iOS Safari */
+    -webkit-user-select: none; /* Safari */
+     -khtml-user-select: none; /* Konqueror HTML */
+       -moz-user-select: none; /* Firefox */
+        -ms-user-select: none; /* Internet Explorer/Edge */
+            user-select: none; /* Non-prefixed version, currently
+                                  supported by Chrome and Opera */
+  ;touch-action: none;
+}
+
+

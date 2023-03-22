@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+  <head>
+      <meta charset="UTF-8"/>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="icon" type="image/x-icon" href="timer2.ico">
+      <title>TIMER</title>
+  </head>
+  <body>
+    
+    <div id="app">
+      <section class="section">
+        <div class="container is-fluid">
+          <div class="content">
+            <h4 class="title">TIMER</h4>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- scripts and styles -->
+    <!-- {% style "/assets/bulma/css/bulma.min.css" %} -->
+    <!-- {% style "/assets/material-icons/css/material-icons.min.css" %} -->
+    {% style "/css/screen.css" %}
+
+    <script type="text/javascript">
+        var csrfToken = "{{csrf-token}}";
+    </script>
+    {% script "/js/app.js" %}
+  </body>
+</html>
