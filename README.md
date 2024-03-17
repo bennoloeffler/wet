@@ -1,25 +1,32 @@
 #### TODOs
-- bug: dont react to touch, when timer is running
+
+- when running, remove the mouse drag on the timer, so that iOS can be moved up/down by drag
+- arrows: set the total time - and also the resume time
+- when jumping, set full minutes
+- when pressed SHIFT, used seconds. Otherwise, do minutes
+- build it on repl it with babashka
+  https://github.com/kloimhardt/babashka-scittle-guestbook/blob/main/guestbook.cljs
+- prevent screensaver: https://www.educative.io/answers/how-to-keep-your-screen-awake-using-javascript
+- SPACE does not work on ios <-- --> do not work on ios
 - bug: does not play sound on ios, may be solved  
   - by: interaction, when pressing start first time
   - and: https://stackoverflow.com/questions/31776548/why-cant-javascript-play-audio-files-on-iphone-safari
 - use arc for visualisation
 - macro for rf/reg-sub standard
-- build it on repl it with babashka
-  https://github.com/kloimhardt/babashka-scittle-guestbook/blob/main/guestbook.cljs
 - syntactic sugar ::<
 
-
 # wet - web-timer
+simple timer to be used in browser.
 
 ## deployed here
-https://replit.com/@bennoloeffler/timer
+Current: https://bels-timer.bennoloeffler.repl.co/
+Legacy: https://replit.com/@bennoloeffler/timer
 
 ## hints for css & sass
 https://bulma.io/documentation/customize/with-node-sass/
 https://css-tricks.com/styling-cross-browser-compatible-range-inputs-css/
 
-## building
+## dev / building
 ```
 npm start (start sass watching and building)
 ```
@@ -37,8 +44,18 @@ To start a web server for the application, run:
 ```
 lein run 
 ```
-or the deployed version   
-at [repl.it](https://repl.it)
 
-https://timer.bennoloeffler.repl.co/
+## Deploying for fast start (without fat jar, web server - just html, css, js)
+I JUST DEPLOYED IT LIKE THAT:
+0. build the app with shadow-cljs
+```shadow-cljs release app```
+You may remove all the dev stuff from shadow-cljs.edn
+1. created a new repl.it project:
+html css js
+2. copied the files from this project by hand:
+js code from 
+target/public/js/compiled/app.js
+per CTRL-C CTRL-V 
+to file script.js in repl.it
+3. uploaded png as timer.png and added to html
 

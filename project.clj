@@ -39,7 +39,8 @@
                  [ring/ring-defaults "0.3.4"]
                  [selmer "1.12.55"]
                  [thheller/shadow-cljs "2.20.3" :scope "provided"]
-                 [re-com "2.13.2"]]
+                 [re-com "2.13.2"]
+                 [org.webjars/font-awesome "6.4.2"]]
 
   :min-lein-version "2.0.0"
   

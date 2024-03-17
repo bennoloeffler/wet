@@ -1,5 +1,6 @@
 (ns wet.timer
   (:require
+    [wet.local-store :as ls]
     [goog.events.KeyCodes :as keycodes]
     [goog.events :as gev]
     [goog.object :as gobj]
@@ -91,12 +92,14 @@
     keycodes/SPACE #(println %)}"
   [key-fun-map]
   (gev/listen js/window EventType.KEYDOWN
-                 #(let [code (.-keyCode %)
-                        fun (key-fun-map code)] ;; 90 is Z
-                    ;(println "key-code: " code)
-                    ;(println "event:")
-                    ;(println (js-obj->clj-map %))
-                    (when fun (fun)))))
+                 #(do
+                    (.preventDefault %)
+                    (let [code (.-keyCode %)
+                          fun (key-fun-map code)] ;; 90 is Z
+                      ;(println "key-code: " code)
+                      ;(println "event:")
+                      ;(println (js-obj->clj-map %))
+                      (when fun (fun))))))
 ;;
 ;; date time seconds helper
 ;;
@@ -167,17 +170,23 @@
   "size: how big should it be in pixel
    timer-duration-ticks: what is the biggest number to show
    timer-remaining-ticks: what is the current remaining number to show in UI"
-  [size timer-remaining-ticks timer-duration-ticks]
+  [size timer-remaining-ticks timer-duration-ticks status]
   (let [dragging (atom false)
-        start-drag (fn [event] (reset! dragging true))
-        drag (fn [event] (when @dragging
-                           (let [data (get-mouse-x-y event)]
-                             (rf/dispatch [:set-timer-percent
-                                           (percentage (:width data)
-                                                       (:height data)
-                                                       (:x data)
-                                                       (:y data))]))))
-        stop-drag (fn [event] (reset! dragging false))]
+        start-drag (fn [event]
+                     (.preventDefault event)
+                     (reset! dragging true))
+        drag (fn [event]
+               (.preventDefault event)
+               (when @dragging
+                 (let [data (get-mouse-x-y event)]
+                   (rf/dispatch [:set-timer-percent
+                                 (percentage (:width data)
+                                             (:height data)
+                                             (:x data)
+                                             (:y data))]))))
+        stop-drag (fn [event]
+                    (.preventDefault event)
+                    (reset! dragging false))]
 
    (fn []
      ;(println "drawing timer with: ")
@@ -187,44 +196,45 @@
 
 
       [:div.timer-svg
-       {:on-mouse-down (fn [event] (start-drag event))
-        :on-touch-start (fn [event] #_(evt> [:user-event "touch start"])(start-drag event))
+        (when (not= @status :running)
+         {:on-mouse-down (fn [event] (start-drag event))
+          :on-touch-start (fn [event] #_(evt> [:user-event "touch start"])(start-drag event))
 
-        :on-mouse-move (fn [event] (drag event))
-        :on-touch-move (fn [event] #_(evt> [:user-event "touch move"])(drag event))
+          :on-mouse-move (fn [event] (drag event))
+          :on-touch-move (fn [event] #_(evt> [:user-event "touch move"])(drag event))
 
-        :on-mouse-up (fn [event] (stop-drag event))
-        :on-mouse-leave (fn [event] (stop-drag event))
-        :on-touch-end (fn [event] #_(evt> [:user-event "touch end"])(stop-drag event))
-        ;:on-touch-leave (fn [event] (stop-drag event)) unknown?
-        :on-touch-cancel (fn [event] #_(evt> [:user-event "touch cancel"])(stop-drag event))
+          :on-mouse-up (fn [event] (stop-drag event))
+          :on-mouse-leave (fn [event] (stop-drag event))
+          :on-touch-end (fn [event] #_(evt> [:user-event "touch end"])(stop-drag event))
+          ;:on-touch-leave (fn [event] (stop-drag event)) unknown?
+          :on-touch-cancel (fn [event] #_(evt> [:user-event "touch cancel"])(stop-drag event))
 
-        :on-click (fn [event]
-                    ;(.preventDefault event)
-                    (let [target (.-currentTarget event) ; not .-target otherwise: Children!
-                          rect (.getBoundingClientRect target)
-                          ;xm (.-clientX event)
-                          ;ym (.-clientY event)
-                          ;x (long (- xm (.-left rect)))
-                          ;y (long (- ym (.-top rect)))
-                          data (get-mouse-x-y event #_size)]
-                          ;x (md :x)
-                          ;y (md :y)
-                          ;data {:x x :y y :height  (.-height rect) :width (.-width rect)}]
-                      ;(println)
-                      ;(println "xy-mouse: " x y)
-                      #_(println "(.getBoundingClientRect target):" (js-obj->clj-map rect))
-                      ;(println (js-obj->clj-map target))
+          :on-click (fn [event]
+                      ;(.preventDefault event)
+                      (let [target (.-currentTarget event) ; not .-target otherwise: Children!
+                            rect (.getBoundingClientRect target)
+                            ;xm (.-clientX event)
+                            ;ym (.-clientY event)
+                            ;x (long (- xm (.-left rect)))
+                            ;y (long (- ym (.-top rect)))
+                            data (get-mouse-x-y event #_size)]
+                            ;x (md :x)
+                            ;y (md :y)
+                            ;data {:x x :y y :height  (.-height rect) :width (.-width rect)}]
+                        ;(println)
+                        ;(println "xy-mouse: " x y)
+                        #_(println "(.getBoundingClientRect target):" (js-obj->clj-map rect))
+                        ;(println (js-obj->clj-map target))
 
-                      #_(println "mouse moved:"
-                                data
-                                #_(js-obj->clj-map event))
-                      (rf/dispatch [:set-timer-percent
-                                    (percentage (:width data)
-                                                (:height data)
-                                                (:x data)
-                                                (:y data))])
-                      #_(reset! mouse-pos mouse-coordinates)))}
+                        #_(println "mouse moved:"
+                                  data
+                                  #_(js-obj->clj-map event))
+                        (rf/dispatch [:set-timer-percent
+                                      (percentage (:width data)
+                                                  (:height data)
+                                                  (:x data)
+                                                  (:y data))])
+                        #_(reset! mouse-pos mouse-coordinates)))})
        (let [;; pixel ticks on the circle - in order to make it more lines
              scaled-duration-ticks          360
              scaled-remaining-ticks         (* @timer-remaining-ticks (/ scaled-duration-ticks @timer-duration-ticks))
@@ -268,10 +278,11 @@
                 #_:onLoad #_#(println "load svg")}
           ;(println all-pos)
           (for [[x y k] all-pos]
-            ^{:key k} [:line {:x1 half :y1 half :x2 x :y2 y :stroke "red" :stroke-width 1}])
+            ^{:key k} [:line {:x1 half :y1 half :x2 x :y2 y :stroke
+                              (if (= @status :running) "red" "lightgrey") :stroke-width 1}])
           [:circle {:r    (/ half 2), :cx half, :cy half,
                     :fill :white :stroke "red" :stroke-width (/ half 6)}]
-          (when (>= @timer-remaining-ticks 60)
+          (when (>= (abs @timer-remaining-ticks) 60)
             [:text {:x                  0 :y 0
                     :text-anchor        "middle"
                     :alignment-baseline "central"
@@ -279,7 +290,7 @@
           [:text {:x                  0 :y 0
                   :text-anchor        "middle"
                   :alignment-baseline "central"
-                  :transform          scale-translate-minutes :fill "red" :stroke "red"} (str (if (< @timer-remaining-ticks 60) @timer-remaining-ticks (quot @timer-remaining-ticks 60)))]
+                  :transform          scale-translate-minutes :fill "red" :stroke "red"} (str (if (< (abs @timer-remaining-ticks) 60) @timer-remaining-ticks (quot @timer-remaining-ticks 60)))]
           [:text {:x                  0 :y 0
                   :text-anchor        "middle"
                   :alignment-baseline "central"
@@ -352,6 +363,18 @@
    {:on-click #(rf/dispatch [:set-timer-plus (* 60 5)])}
    [:span "+5"]])
 
+(defn sound-button []
+  [:a.button.is-light.mr-1.mt-1
+   {:style {:color "red"}
+    :on-click #(rf/dispatch [:timer-sound])}
+   #_[:span.icon {:src "volume-high-solid.svg"} "sound on"]
+
+   (if @(sub [:timer-sound])
+     [:img {:src "volume-high-solid.svg"}]
+     [:img {:src "volume-xmark-solid.svg"}])])
+;; fa-volume-high fa-volume-xmark
+
+
 #_(defn re-com-slider [max-minutes data]
     [slider
      :style {:background       "blue"
@@ -405,6 +428,8 @@
         duration    (sub [:timer-duration-secs])
         remaining   (sub [:timer-remaining-secs])
         status      (sub [:timer-state])
+        sound-on    (sub [:timer-sound])
+
         evt (sub [:user-event])]
         ;first-start (sub [:timer-first-start])]
     (fn []
@@ -438,13 +463,13 @@
        [:div.columns.is-centered
         #_[:div.column]
         (if running
-           [:div.column.is-full.has-text-centered [stop-button]]
+           [:div.column.is-full.has-text-centered [sound-button][stop-button]]
            (let [remainingDisplay (if (> @remaining 60) (quot @remaining 60) (str @remaining "s"))
                  durationDisplay (if (> @duration 60) (quot @duration 60) (str @duration "s"))]
 
               (if (= @duration @remaining);@first-start
-                [:div.column.is-full.has-text-centered [m1-button][m5-button][m10-button][m20-button][m+5-button][start-button durationDisplay]]
-                [:div.column.is-full.has-text-centered [m1-button][m5-button][m10-button][m20-button][m+5-button][start-button durationDisplay][resume-button remainingDisplay]])))
+                [:div.column.is-full.has-text-centered [sound-button][m1-button][m5-button][m10-button][m20-button][m+5-button][start-button durationDisplay]]
+                [:div.column.is-full.has-text-centered [sound-button][m1-button][m5-button][m10-button][m20-button][m+5-button][start-button durationDisplay][resume-button remainingDisplay]])))
         #_[:div.column]]
 
          ;[timer 500 150 200]
@@ -462,15 +487,15 @@
                                     (println "mouse moved:"
                                              mouse-coordinates
                                              #_(js-obj->clj-map event))))}]]]
-       [timer 400  remaining duration]
+       [timer 400  remaining duration status]
 
        (cond
-         warning [:div.columns
-                  [:div.column.is-full.has-text-centered
-                   [:audio {:src "sound/Auratone.mp3" #_:controls #_"true" :autoPlay true :loop true}]]]
-         alarm [:div.columns
-                [:div.column.is-full.has-text-centered
-                 [:audio {:src "sound/Ping1.mp3" #_:controls #_"true" :autoPlay true :loop true}]]])
+         (and @sound-on warning) [:div.columns
+                                  [:div.column.is-full.has-text-centered
+                                   [:audio {:src "Softchime.mp3" #_:controls #_"true" :autoPlay true :loop true}]]]
+         (and @sound-on alarm) [:div.columns
+                                [:div.column.is-full.has-text-centered
+                                 [:audio {:src "Ping1.mp3" #_:controls #_"true" :autoPlay true :loop true}]]])
 
 
        [:div.columns
@@ -483,6 +508,23 @@
           #_[:div.column.is-2>h1.title.is-4.has-text-grey-light [show-walltime-of time :with-seconds]]
           #_[:div.column.is-2>h1.title.is-4.has-text-grey-light [show-walltime-of end]]
           #_[:div.column]]
+       [:br][:br][:br][:br][:br]
+       [:div.columns
+         ;[:div.column]
+         [:div.column.is-full.has-text-centered
+          [:p [:strong "Help"]]
+          [:p "buttons, slider - set the total time."]
+          [:p "mouse, touch - set the current time."]
+          [:p "start - (re)starts from the total time set."]
+          [:p "resume - does not restart from total but from current."]
+          [:p "ENTER - (re)starts the timer"]
+          [:p "SPACE - stops or resumes the timer"]
+          [:p "⬅️ ➡️ - increase or decrease total time by 1 minute"]]]
+       [:br][:br][:br][:br][:br]
+       [:div.columns
+        ;[:div.column]
+        [:div.column.is-full.has-text-centered
+         [:p "created by BEL"]]]
        #_[:pre (str @evt)]
          ;[:div (str @state)]
          ;[:div (str "duration: " @duration)]
@@ -498,6 +540,13 @@
     :timer-init
     (fn [_ [_ secs]]
       {:dispatch [:set-timer-duration-secs secs]}))
+
+;TODO:
+; cofx with local store
+;   read :timer-sound
+;        :timer-duration-secs
+;        :timer-remaining-secs
+; from local store
 
 (rf/reg-event-db
   :timer-init
@@ -618,6 +667,13 @@
     (-> db
         (assoc :user-event evt #_(js-obj->clj-map evt)))))
 
+(rf/reg-event-db
+  :timer-sound
+  (fn [db [_ evt]]
+    (-> db
+        (update :timer-sound not))))
+
+
 ;; subs
 
 ;; timer-duration-secs - the start duration of the timer
@@ -664,6 +720,11 @@
   :timer-state
   (fn [db _]
     (:timer-state db)))
+
+(rf/reg-sub
+  :timer-sound
+  (fn [db _]
+    (:timer-sound db)))
 
 (rf/reg-sub
   :user-event
