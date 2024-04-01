@@ -92,4 +92,5 @@
   (ajax/load-interceptors!)
   (mount-components)
   (rf/dispatch-sync [:timer-init (* 60 20)])
+  (rf/dispatch-sync [:timer-sound])
   (timer/bind-keys timer/key-fun-map))

@@ -4,22 +4,25 @@
 - arrows: set the total time - and also the resume time
 - when jumping, set full minutes
 - when pressed SHIFT, used seconds. Otherwise, do minutes
-- build it on repl it with babashka
-  https://github.com/kloimhardt/babashka-scittle-guestbook/blob/main/guestbook.cljs
 - prevent screensaver: https://www.educative.io/answers/how-to-keep-your-screen-awake-using-javascript
 - SPACE does not work on ios <-- --> do not work on ios
 - bug: does not play sound on ios, may be solved  
   - by: interaction, when pressing start first time
   - and: https://stackoverflow.com/questions/31776548/why-cant-javascript-play-audio-files-on-iphone-safari
 - use arc for visualisation
-- macro for rf/reg-sub standard
-- syntactic sugar ::<
+- ok use a better sounds
+- slider off and time from bottom to top, when running
+- no: when time is up, show start as re-start button
+- remove bug when time is negative
+- have a big round button for moving the circle
+
 
 # wet - web-timer
 simple timer to be used in browser.
 
 ## deployed here
-Current: https://bels-timer.bennoloeffler.repl.co/
+Current: github pages: https://bennoloeffler.github.io/wet/
+Legacy: https://bels-timer.bennoloeffler.repl.co/
 Legacy: https://replit.com/@bennoloeffler/timer
 
 ## hints for css & sass

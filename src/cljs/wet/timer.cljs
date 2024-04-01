@@ -8,6 +8,7 @@
     [reagent.core :as r]
     [reagent.dom :as rdom]
     [wet.validation :refer [percentage]]
+    [clojure.string :as str]
     #_[re-com.core :refer [at h-box v-box box gap line label title slider checkbox input-text horizontal-bar-tabs vertical-bar-tabs p]])
   (:import [goog.events EventType KeyHandler]))
 
@@ -277,16 +278,22 @@
 
                 #_:onLoad #_#(println "load svg")}
           ;(println all-pos)
-          (for [[x y k] all-pos]
-            ^{:key k} [:line {:x1 half :y1 half :x2 x :y2 y :stroke
-                              (if (= @status :running) "red" "lightgrey") :stroke-width 1}])
+          (doall (for [[x y k] all-pos]
+                   ^{:key k} [:line {:x1 half :y1 half :x2 x :y2 y :stroke
+                                     (if (= @status :running) "red" "lightgrey") :stroke-width 1}]))
+
           [:circle {:r    (/ half 2), :cx half, :cy half,
                     :fill :white :stroke "red" :stroke-width (/ half 6)}]
+
+          #_(println remaining-secs)
           (when (>= (abs @timer-remaining-ticks) 60)
             [:text {:x                  0 :y 0
                     :text-anchor        "middle"
                     :alignment-baseline "central"
-                    :transform          scale-translate-remaining-secs :fill "red" :stroke "red"} (str remaining-secs)])
+                    :transform          scale-translate-remaining-secs :fill "red" :stroke "red"}
+             (if (< @timer-remaining-ticks 0)
+               (str (- 60 remaining-secs))
+               (str remaining-secs))])
           [:text {:x                  0 :y 0
                   :text-anchor        "middle"
                   :alignment-baseline "central"
@@ -325,20 +332,51 @@
                 [timer 400 #_(max (:width @size) (:height @size)) timer-remaining-ticks timer-duration-ticks]
                 (finally (.removeEventListener js/window "resize" handler))))
 
+(def alarm (atom nil))
+
+(defn stop-alarm
+  []
+  (.load @alarm)
+  nil)
+
+(defn play-alarm
+  []
+  (.play @alarm)
+  nil)
+
+(defn init-audio
+  "start once on an interaction in order to replay afterwards on mobile browsers"
+  []
+  (when-not @alarm
+    (reset! alarm (js/Audio. "Softchime.mp3"))
+    ;(set! (.. @alarm -loop) true)
+    (play-alarm)
+
+    (js/setTimeout #(stop-alarm) 1750)))
 
 (defn start-button [durationDisplay]
   [:a.button.is-primary.is-light.mr-1.mt-1
-   {:on-click #(rf/dispatch [:timer-start])}
+   {:on-click #(do (init-audio)
+                   (rf/dispatch [:timer-start]))}
    [:span (str "start: " durationDisplay)]])
+
+(defn re-start-button [durationDisplay]
+  [:a.button.is-primary.is-light.mr-1.mt-1
+   {:on-click #(rf/dispatch [:timer-re-start (if (str/ends-with? durationDisplay "s")
+                                               (js/parseInt (str/replace durationDisplay #"s" ""))
+                                               (* 60 (js/parseInt durationDisplay)))])}
+   [:span (str "re-start: " durationDisplay)]])
 
 (defn stop-button []
   [:a.button.is-danger.is-light.mr-1.mt-1
-   {:on-click #(rf/dispatch [:timer-stop])}
+   {:on-click #(do (stop-alarm)
+                   (rf/dispatch [:timer-stop]))}
    [:span "stop"]])
 
 (defn resume-button [remainingDisplay]
   [:a.button.is-primary.is-light.mr-1.mt-1
-   {:on-click #(rf/dispatch [:timer-resume])}
+   {:on-click #(do (init-audio)
+                   (rf/dispatch [:timer-resume]))}
    [:span (str "resume: " remainingDisplay)]])
 
 (defn m1-button []
@@ -362,16 +400,28 @@
   [:a.button.is-light.mr-1.mt-1
    {:on-click #(rf/dispatch [:set-timer-plus (* 60 5)])}
    [:span "+5"]])
-
-(defn sound-button []
+(defn m-5-button []
   [:a.button.is-light.mr-1.mt-1
-   {:style {:color "red"}
-    :on-click #(rf/dispatch [:timer-sound])}
-   #_[:span.icon {:src "volume-high-solid.svg"} "sound on"]
-
-   (if @(sub [:timer-sound])
-     [:img {:src "volume-high-solid.svg"}]
-     [:img {:src "volume-xmark-solid.svg"}])])
+   {:on-click #(rf/dispatch [:set-timer-plus (* -60 5)])}
+   [:span "-5"]])
+(defn m-1-button []
+  [:a.button.is-light.mr-1.mt-1
+   {:on-click #(rf/dispatch [:set-timer-plus (* -60 1)])}
+   [:span "-1"]])
+(defn m+1-button []
+  [:a.button.is-light.mr-1.mt-1
+   {:on-click #(rf/dispatch [:set-timer-plus (* 60 1)])}
+   [:span "+1"]])
+(defn sound-button []
+  (let [timer-sound (sub [:timer-sound])]
+    (fn []
+      [:a.button.is-light.mr-1.mt-1
+       {:style {:color "red"}
+        :on-click #(do (when @timer-sound (stop-alarm))
+                       (rf/dispatch [:timer-sound]))}
+       (if @timer-sound
+         (do #_(play-alarm) [:img {:src "volume-high-solid.svg"}])
+         (do (stop-alarm) [:img {:src "volume-xmark-solid.svg"}]))])))
 ;; fa-volume-high fa-volume-xmark
 
 
@@ -435,7 +485,7 @@
     (fn []
      (let [running (keyword-identical? @status :running)
            warning (and running (< 0 @remaining 60))
-           alarm   (and running (< -10 @remaining 3))]
+           alarm   (and running (< -60 @remaining 3))]
 
       [:div.timer-frame (when (-> alarm
                                   (and (odd? @remaining)))
@@ -455,23 +505,35 @@
        [:div.columns.is-centered
         [:div.column
 
-         [:div {:style {:padding-left 20 :padding-right 20}}
-          [bel-slider max-minutes duration running]]
+         (if (not running)
+           [:div {:style {:padding-left 20 :padding-right 20}}
+            [bel-slider max-minutes duration running]])
 
          #_[:div [size-comp]]]]
 
        [:div.columns.is-centered
         #_[:div.column]
+
+        (let [remainingDisplay (if (> @remaining 60) (quot @remaining 60) (str @remaining "s"))
+              durationDisplay (if (> @duration 60) (quot @duration 60) (str @duration "s"))]
+
+          (if running
+            [:div.column.is-full.has-text-centered [sound-button][stop-button][re-start-button durationDisplay]]
+            [:div.column.is-full.has-text-centered
+             [sound-button][m-1-button][m-5-button][m20-button]
+             [m+5-button][m+1-button]
+             [start-button durationDisplay]
+             (when (and (not= @duration @remaining)
+                        (> @remaining 0))
+               [resume-button remainingDisplay])]))
+               ;[:div.column.is-full.has-text-centered [sound-button][m1-button][m5-button][m-5-button][m20-button][m+5-button][start-button durationDisplay]])))
+        #_[:div.column]
         (if running
-           [:div.column.is-full.has-text-centered [sound-button][stop-button]]
-           (let [remainingDisplay (if (> @remaining 60) (quot @remaining 60) (str @remaining "s"))
-                 durationDisplay (if (> @duration 60) (quot @duration 60) (str @duration "s"))]
-
-              (if (= @duration @remaining);@first-start
-                [:div.column.is-full.has-text-centered [sound-button][m1-button][m5-button][m10-button][m20-button][m+5-button][start-button durationDisplay]]
-                [:div.column.is-full.has-text-centered [sound-button][m1-button][m5-button][m10-button][m20-button][m+5-button][start-button durationDisplay][resume-button remainingDisplay]])))
-        #_[:div.column]]
-
+          [:div.column.is-full.has-text-centered
+           [:font.wallclocktime
+            (show-walltime-of start :without-seconds)
+            " ⮕ " (show-walltime-of time :with-seconds)
+            " ⮕ " (show-walltime-of end :without-seconds)]])]
          ;[timer 500 150 200]
 
 
@@ -488,14 +550,14 @@
                                              mouse-coordinates
                                              #_(js-obj->clj-map event))))}]]]
        [timer 400  remaining duration status]
+       ;(println "tick: sound =" @sound-on ", alarm =" alarm ", remaining =" @remaining)
 
-       (cond
-         (and @sound-on warning) [:div.columns
-                                  [:div.column.is-full.has-text-centered
-                                   [:audio {:src "Softchime.mp3" #_:controls #_"true" :autoPlay true :loop true}]]]
-         (and @sound-on alarm) [:div.columns
-                                [:div.column.is-full.has-text-centered
-                                 [:audio {:src "Ping1.mp3" #_:controls #_"true" :autoPlay true :loop true}]]])
+       (when (and
+               @sound-on
+               alarm
+               (= @remaining 0))
+         (play-alarm))
+
 
 
        [:div.columns
@@ -634,6 +696,7 @@
     db)))
 
 
+
 #_(rf/reg-event-db
     :timer-pause
     (fn [db [_ secs]]
@@ -646,9 +709,18 @@
 
 (rf/reg-event-db
   :timer-stop
-  (fn [db [_ secs]]
+  (fn [db _]
     (-> db
         (assoc :timer-state :stopped))))
+
+(rf/reg-event-fx
+  :timer-re-start
+  (fn [_ [_ secs]]
+    {:fx [[:dispatch [:timer-stop]]
+          [:dispatch [:set-timer-duration-and-remaining-secs secs]]
+          [:dispatch [:timer-start]]]}))
+
+
 
 (rf/reg-event-db
   :timer-toggle
