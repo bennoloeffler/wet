@@ -49,19 +49,22 @@ lein run
 ```
 
 ## Deploying for fast start (without fat jar, web server - just html, css, js)
-I JUST DEPLOYED IT LIKE THAT:
-0. build the app with shadow-cljs
+DEPLOY LIKE THAT:
+
+1. build the app with shadow-cljs
 ```shadow-cljs release app```
 
+1. copy the new optimized app.js files from target/public/js to /docs
+```cp target/cljsbuild/public/js/app.js docs/app.js```
 
-### OLD - rewrite to /doc and git pages
-You may remove all the dev stuff from shadow-cljs.edn
-1. created a new repl.it project:
-html css js
-2. copied the files from this project by hand:
-js code from 
-target/public/js/compiled/app.js
-per CTRL-C CTRL-V 
-to file script.js in repl.it
-3. uploaded png as timer.png and added to html
+1. copy a new created screen.css to /docs 
+```cp resources/public/css/screen.css docs/screen.css```
 
+1. copy all images from resources/public/img to /docs
+```cp resources/public/img/*.png docs/``` 
+
+1. copy sounds from resources/public/sounds to /docs
+```cp resources/public/sounds/*.mp3 docs/```
+
+1. commit at least the /doc folder and push to github
+```cd doc && git add . && git commit -m "new release" && git push```
