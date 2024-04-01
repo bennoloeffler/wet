@@ -52,6 +52,9 @@ lein run
 I JUST DEPLOYED IT LIKE THAT:
 0. build the app with shadow-cljs
 ```shadow-cljs release app```
+
+
+### OLD - rewrite to /doc and git pages
 You may remove all the dev stuff from shadow-cljs.edn
 1. created a new repl.it project:
 html css js

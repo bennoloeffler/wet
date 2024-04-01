@@ -527,19 +527,20 @@
                         (> @remaining 0))
                [resume-button remainingDisplay])]))
                ;[:div.column.is-full.has-text-centered [sound-button][m1-button][m5-button][m-5-button][m20-button][m+5-button][start-button durationDisplay]])))
-        #_[:div.column]
+        #_[:div.column]]
+       [:div.columns.is-centered
         (if running
           [:div.column.is-full.has-text-centered
            [:font.wallclocktime
             (show-walltime-of start :without-seconds)
             " ⮕ " (show-walltime-of time :with-seconds)
             " ⮕ " (show-walltime-of end :without-seconds)]])]
-         ;[timer 500 150 200]
+        ;[timer 500 150 200]
 
 
-         ;[:div (str "s: " @start)]
-         ;[:div (str "e: "@end)]
-         ;[:div (str "t: "@time)]
+        ;[:div (str "s: " @start)]
+        ;[:div (str "e: "@end)]
+        ;[:div (str "t: "@time)]
        #_[:div.columns
             [:div.column
              [:div #_(println "remain: " @remaining)
