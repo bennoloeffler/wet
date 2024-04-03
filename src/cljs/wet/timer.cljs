@@ -352,7 +352,7 @@
     ;(set! (.. @alarm -loop) true)
     (play-alarm)
 
-    (js/setTimeout #(stop-alarm) 1750)))
+    (js/setTimeout #(stop-alarm) 1950)))
 
 (defn start-button [durationDisplay]
   [:a.button.is-primary.is-light.mr-1.mt-1
@@ -362,9 +362,11 @@
 
 (defn re-start-button [durationDisplay]
   [:a.button.is-primary.is-light.mr-1.mt-1
-   {:on-click #(rf/dispatch [:timer-re-start (if (str/ends-with? durationDisplay "s")
-                                               (js/parseInt (str/replace durationDisplay #"s" ""))
-                                               (* 60 (js/parseInt durationDisplay)))])}
+   {:on-click #(do (stop-alarm)
+                   (rf/dispatch [:timer-re-start
+                                 (if (str/ends-with? durationDisplay "s")
+                                   (js/parseInt (str/replace durationDisplay #"s" ""))
+                                   (* 60 (js/parseInt durationDisplay)))]))}
    [:span (str "re-start: " durationDisplay)]])
 
 (defn stop-button []
@@ -561,16 +563,17 @@
 
 
 
-       [:div.columns
-          ;[:div.column]
-          [:div.column.is-full.has-text-centered
-           [:font.wallclocktime
-            (show-walltime-of start :without-seconds)
-            " ⮕ " (show-walltime-of time :with-seconds)
-            " ⮕ " (show-walltime-of end :without-seconds)]]
-          #_[:div.column.is-2>h1.title.is-4.has-text-grey-light [show-walltime-of time :with-seconds]]
-          #_[:div.column.is-2>h1.title.is-4.has-text-grey-light [show-walltime-of end]]
-          #_[:div.column]]
+       (when-not running
+         [:div.columns
+            ;[:div.column]
+            [:div.column.is-full.has-text-centered
+             [:font.wallclocktime
+              (show-walltime-of start :without-seconds)
+              " ⮕ " (show-walltime-of time :with-seconds)
+              " ⮕ " (show-walltime-of end :without-seconds)]]
+            #_[:div.column.is-2>h1.title.is-4.has-text-grey-light [show-walltime-of time :with-seconds]]
+            #_[:div.column.is-2>h1.title.is-4.has-text-grey-light [show-walltime-of end]]
+            #_[:div.column]])
        [:br][:br][:br][:br][:br]
        [:div.columns
          ;[:div.column]
