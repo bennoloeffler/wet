@@ -29,7 +29,7 @@ Legacy: https://replit.com/@bennoloeffler/timer
 https://bulma.io/documentation/customize/with-node-sass/
 https://css-tricks.com/styling-cross-browser-compatible-range-inputs-css/
 
-## dev / building
+## dev
 ```
 npm start (start sass watching and building)
 ```
@@ -37,19 +37,15 @@ npm start (start sass watching and building)
 shadow-clj watch app
 ```
 ```
-(start) webserver in repl
+(start) webserver in repl, intellij idea
 ```
 ```
-lein uberjar
-```
-## running
-To start a web server for the application, run:
-```
-lein run 
+localhost:3000
 ```
 
-## Deploying for fast start (without fat jar, web server - just html, css, js)
-DEPLOY LIKE THAT:
+
+## Deploying for fast start (without fat jar and web server... just html, css, js)
+DEPLOY LIKE THAT (not yet automated :-( ):
 
 1. build the app with shadow-cljs
 ```shadow-cljs release app```

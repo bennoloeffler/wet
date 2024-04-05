@@ -11,4 +11,4 @@
                 ;:release     {:compiler-options {:optimizations :simple}}}
          :test {:target  :node-test, :output-to "target/test/test.js"
                 :autorun true}}
- :lein  true #_{:profile "+dev"}}
+ :lein  {:profile "+dev"}}

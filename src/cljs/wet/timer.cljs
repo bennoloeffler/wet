@@ -348,11 +348,14 @@
   "start once on an interaction in order to replay afterwards on mobile browsers"
   []
   (when-not @alarm
-    (reset! alarm (js/Audio. "Softchime.mp3"))
+    (reset! alarm (js/Audio. "deep-meditation-bell.mp3" #_"Softchime.mp3"))
     ;(set! (.. @alarm -loop) true)
     (play-alarm)
+    (js/setTimeout #(stop-alarm) 10)))
 
-    (js/setTimeout #(stop-alarm) 1950)))
+;;
+;; ALL buttons
+;;
 
 (defn start-button [durationDisplay]
   [:a.button.is-primary.is-light.mr-1.mt-1
@@ -390,58 +393,49 @@
   [:a.button.is-light.mr-1.mt-1
    {:on-click #(rf/dispatch [:set-timer-duration-and-remaining-secs (* 60 5)])}
    [:span "5"]])
+
 (defn m10-button []
   [:a.button.is-light.mr-1.mt-1
    {:on-click #(rf/dispatch [:set-timer-duration-and-remaining-secs (* 60 10)])}
    [:span "10"]])
+
 (defn m20-button []
   [:a.button.is-light.mr-1.mt-1
    {:on-click #(rf/dispatch [:set-timer-duration-and-remaining-secs (* 60 20)])}
    [:span "20"]])
+
 (defn m+5-button []
   [:a.button.is-light.mr-1.mt-1
    {:on-click #(rf/dispatch [:set-timer-plus (* 60 5)])}
    [:span "+5"]])
+
 (defn m-5-button []
   [:a.button.is-light.mr-1.mt-1
    {:on-click #(rf/dispatch [:set-timer-plus (* -60 5)])}
    [:span "-5"]])
+
 (defn m-1-button []
   [:a.button.is-light.mr-1.mt-1
    {:on-click #(rf/dispatch [:set-timer-plus (* -60 1)])}
    [:span "-1"]])
+
 (defn m+1-button []
   [:a.button.is-light.mr-1.mt-1
    {:on-click #(rf/dispatch [:set-timer-plus (* 60 1)])}
    [:span "+1"]])
+
 (defn sound-button []
   (let [timer-sound (sub [:timer-sound])]
     (fn []
       [:a.button.is-light.mr-1.mt-1
        {:style {:color "red"}
-        :on-click #(do (when @timer-sound (stop-alarm))
+        :on-click #(do (when @timer-sound (init-audio)
+                                          (stop-alarm))
                        (rf/dispatch [:timer-sound]))}
        (if @timer-sound
-         (do #_(play-alarm) [:img {:src "volume-high-solid.svg"}])
-         (do (stop-alarm) [:img {:src "volume-xmark-solid.svg"}]))])))
-;; fa-volume-high fa-volume-xmark
+         [:img {:src "volume-high-solid.svg"}]
+         [:img {:src "volume-xmark-solid.svg"}])])))
 
-
-#_(defn re-com-slider [max-minutes data]
-    [slider
-     :style {:background       "blue"
-             :color            "red"
-             :foreground-color "green"}
-     ;:src       (at)
-     :model (<watch [:timer-duration-secs])
-     :min 0
-     :max max-minutes
-     :step 1
-     :width "100%"
-     :on-change #(do (println "val=" %)
-                     (swap! data assoc :range %)
-                     (rf/dispatch [:set-timer-duration-secs %]))
-     :disabled? false])
 
 (defn bel-slider [max-minutes data disabled]
   ;[:div.slidecontainer
@@ -459,8 +453,10 @@
                                      ;(swap! data assoc :range val)
                                      (rf/dispatch [:set-timer-duration-and-remaining-secs val]))}])
 
+
 (defn format-01 [num]
   (if (> num 9) (str num) (str "0" num)))
+
 
 (defn show-walltime-of [time-atom with-seconds]
   (if-let [time @time-atom]
@@ -480,10 +476,7 @@
         duration    (sub [:timer-duration-secs])
         remaining   (sub [:timer-remaining-secs])
         status      (sub [:timer-state])
-        sound-on    (sub [:timer-sound])
-
-        evt (sub [:user-event])]
-        ;first-start (sub [:timer-first-start])]
+        sound-on    (sub [:timer-sound])]
     (fn []
      (let [running (keyword-identical? @status :running)
            warning (and running (< 0 @remaining 60))
@@ -491,34 +484,17 @@
 
       [:div.timer-frame (when (-> alarm
                                   (and (odd? @remaining)))
-                          {:style {:background "red"}}
-                          #_{:onMouseMove (fn [event]
-                                            (let [ mouse-coordinates {:x (.-clientX event) :y (.-clientY event)}]
-                                              (println "mouse moved:"
-                                                       mouse-coordinates
-                                                       #_(js-obj->clj-map event))))})
+                          {:style {:background "red"}})
 
-       ;[:section.section>div.container>div.content
-       ;[:section.section
-       ;[:div (str (:timer-duration-secs @data))]
-       #_[:div.columns
-          [:div.column
-           [re-com-slider max-minutes data]]]
        [:div.columns.is-centered
         [:div.column
-
-         (if (not running)
+         (when (not running)
            [:div {:style {:padding-left 20 :padding-right 20}}
-            [bel-slider max-minutes duration running]])
-
-         #_[:div [size-comp]]]]
+            [bel-slider max-minutes duration running]])]]
 
        [:div.columns.is-centered
-        #_[:div.column]
-
         (let [remainingDisplay (if (> @remaining 60) (quot @remaining 60) (str @remaining "s"))
               durationDisplay (if (> @duration 60) (quot @duration 60) (str @duration "s"))]
-
           (if running
             [:div.column.is-full.has-text-centered [sound-button][stop-button][re-start-button durationDisplay]]
             [:div.column.is-full.has-text-centered
@@ -527,41 +503,23 @@
              [start-button durationDisplay]
              (when (and (not= @duration @remaining)
                         (> @remaining 0))
-               [resume-button remainingDisplay])]))
-               ;[:div.column.is-full.has-text-centered [sound-button][m1-button][m5-button][m-5-button][m20-button][m+5-button][start-button durationDisplay]])))
-        #_[:div.column]]
+               [resume-button remainingDisplay])]))]
+
        [:div.columns.is-centered
-        (if running
+        (when running
           [:div.column.is-full.has-text-centered
            [:font.wallclocktime
             (show-walltime-of start :without-seconds)
             " ⮕ " (show-walltime-of time :with-seconds)
             " ⮕ " (show-walltime-of end :without-seconds)]])]
-        ;[timer 500 150 200]
 
-
-        ;[:div (str "s: " @start)]
-        ;[:div (str "e: "@end)]
-        ;[:div (str "t: "@time)]
-       #_[:div.columns
-            [:div.column
-             [:div #_(println "remain: " @remaining)
-              #_{:on-mouse-move (fn [event]
-                                  ;(.preventDefault event)
-                                  (let [ mouse-coordinates {:x (.-clientX event) :y (.-clientY event)}]
-                                    (println "mouse moved:"
-                                             mouse-coordinates
-                                             #_(js-obj->clj-map event))))}]]]
        [timer 400  remaining duration status]
-       ;(println "tick: sound =" @sound-on ", alarm =" alarm ", remaining =" @remaining)
 
        (when (and
                @sound-on
                alarm
                (= @remaining 0))
          (play-alarm))
-
-
 
        (when-not running
          [:div.columns
@@ -570,13 +528,11 @@
              [:font.wallclocktime
               (show-walltime-of start :without-seconds)
               " ⮕ " (show-walltime-of time :with-seconds)
-              " ⮕ " (show-walltime-of end :without-seconds)]]
-            #_[:div.column.is-2>h1.title.is-4.has-text-grey-light [show-walltime-of time :with-seconds]]
-            #_[:div.column.is-2>h1.title.is-4.has-text-grey-light [show-walltime-of end]]
-            #_[:div.column]])
-       [:br][:br][:br][:br][:br]
+              " ⮕ " (show-walltime-of end :without-seconds)]]])
+
+       [:br][:br][:br]
+
        [:div.columns
-         ;[:div.column]
          [:div.column.is-full.has-text-centered
           [:p [:strong "Help"]]
           [:p "buttons, slider - set the total time."]
@@ -586,26 +542,15 @@
           [:p "ENTER - (re)starts the timer"]
           [:p "SPACE - stops or resumes the timer"]
           [:p "⬅️ ➡️ - increase or decrease total time by 1 minute"]]]
-       [:br][:br][:br][:br][:br]
+
+       [:br][:br]
+
        [:div.columns
-        ;[:div.column]
         [:div.column.is-full.has-text-centered
-         [:p "created by BEL"]]]
-       #_[:pre (str @evt)]
-         ;[:div (str @state)]
-         ;[:div (str "duration: " @duration)]
-         ;[:div (str "remain: "@remaining)]
-
-       #_(if (= @state :stopped)
-             [timer 700 @duration @duration]
-             [timer 700 @remaining @duration])]))))
-
-;; events
-
-#_(rf/reg-event-fx
-    :timer-init
-    (fn [_ [_ secs]]
-      {:dispatch [:set-timer-duration-secs secs]}))
+         [:p "created by BEL"]
+         [:p "sources: "
+          [:a {:href "https://github.com/bennoloeffler/wet"}
+           "github.com/bennoloeffler/wet"]]]]]))))
 
 ;TODO:
 ; cofx with local store
@@ -620,8 +565,8 @@
     (-> db
         (assoc :timer-duration-secs secs)
         (assoc :timer-remaining-secs secs)
-        (assoc :timer-state :stopped)
-        #_(assoc :timer-first-start true))))
+        (assoc :timer-state :stopped))))
+
 
 (rf/reg-event-db ;; usage:  (rf/dispatch [:timer a-js-Date])
   :timer-time
@@ -629,30 +574,23 @@
     (let [remaining (if (= :running (:timer-state db))
                       (subtract-in-secs (:timer-end db) new-time)
                       (:timer-remaining-secs db))
-          #_x #_(if (= :running (:timer-state db))
-                  (dec (:timer-remaining-secs db))
-                  (:timer-remaining-secs db))
           end       (if (= :running (:timer-state db))
                       (:timer-end db)
                       (add-seconds remaining))
-                    #_(if (:timer-first-start db)
-                          nil
-                          (add-seconds remaining))
-          ;_ (println "END: " end)
           end-map   (if end
                       {:timer-end end}
                       {})]
-
-
       (-> db
           (into end-map)
           (assoc :timer-time new-time)
           (assoc :timer-remaining-secs remaining)))))
 
+
 (rf/reg-event-db
   :set-timer-duration-secs
   (fn [db [_ secs]]
     (assoc db :timer-duration-secs (long secs))))
+
 
 (rf/reg-event-db
   :set-timer-percent
@@ -662,6 +600,7 @@
           remaining  (-> all (* percent) (/ 100))]
           ;_ (println remaining)]
       (assoc db :timer-remaining-secs (long remaining)))))
+
 
 (rf/reg-event-db
   :set-timer-plus
@@ -674,15 +613,15 @@
             (update :timer-duration-secs #(+ % secs))
             (update :timer-remaining-secs #(+ % secs)))
         db))))
-            ;(assoc :timer-first-start true))))
+
 
 (rf/reg-event-db
   :set-timer-duration-and-remaining-secs
   (fn [db [_ secs]]
     (-> db
         (assoc :timer-duration-secs (long secs))
-        (assoc :timer-remaining-secs (long secs))
-        #_(assoc :timer-first-start true))))
+        (assoc :timer-remaining-secs (long secs)))))
+
 
 (rf/reg-event-db
   :timer-start
@@ -695,21 +634,15 @@
           (assoc :timer-state :running)
           (assoc :timer-start now)
           (assoc :timer-end end)
-          (assoc :timer-remaining-secs remain)
-          #_(assoc :timer-first-start false)))
+          (assoc :timer-remaining-secs remain)))
     db)))
 
-
-
-#_(rf/reg-event-db
-    :timer-pause
-    (fn [db [_ secs]]
-      (assoc db :timer-state :paused)))
 
 (rf/reg-event-db
   :timer-resume
   (fn [db [_ secs]]
     (assoc db :timer-state :running)))
+
 
 (rf/reg-event-db
   :timer-stop
@@ -717,13 +650,13 @@
     (-> db
         (assoc :timer-state :stopped))))
 
+
 (rf/reg-event-fx
   :timer-re-start
   (fn [_ [_ secs]]
     {:fx [[:dispatch [:timer-stop]]
           [:dispatch [:set-timer-duration-and-remaining-secs secs]]
           [:dispatch [:timer-start]]]}))
-
 
 
 (rf/reg-event-db
@@ -737,11 +670,13 @@
             (assoc :timer-state :running))
         db))))
 
+
 (rf/reg-event-db
   :user-event
   (fn [db [_ evt]]
     (-> db
         (assoc :user-event evt #_(js-obj->clj-map evt)))))
+
 
 (rf/reg-event-db
   :timer-sound
@@ -749,23 +684,9 @@
     (-> db
         (update :timer-sound not))))
 
-
-;; subs
-
-;; timer-duration-secs - the start duration of the timer
-;; timer-time - js/Date current time, wallclock
-;; timer-start - js/Date when was the timer started, wallclock
-;; timer-end - js/Date when is the timer to be
-;;             finished (including pauses), wallclock
-;; timer-remaining-secs - secs that are remaining.
-;; timer-state - :started :stopped
-#_(defmacro data-sub [key]
-    `(rf/reg-sub
-       key
-       (fn [db _]
-         (key db))))
-
-#_(data-sub :timer-duration-secs)
+;;
+;; All subsriptions
+;;
 
 (rf/reg-sub
   :timer-duration-secs
@@ -774,8 +695,8 @@
 
 (rf/reg-sub
   :timer-time
-  (fn [db _] ;; db is current app state. 2nd unused param is query vector
-    (:timer-time db))) ;; return a query computation over the application state
+  (fn [db _]
+    (:timer-time db)))
 
 (rf/reg-sub
   :timer-start
@@ -806,8 +727,3 @@
   :user-event
   (fn [db _]
     (:user-event db)))
-
-#_(rf/reg-sub
-    :timer-first-start
-    (fn [db _]
-      (:timer-first-start db)))
