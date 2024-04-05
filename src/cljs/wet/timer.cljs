@@ -79,8 +79,10 @@
 ;; https://github.com/reagent-project/historian/blob/master/src/cljs/historian/keys.cljs
 
 (def key-fun-map
-  {keycodes/LEFT #(rf/dispatch [:set-timer-plus (* 60 -1)])
+  {keycodes/LEFT  #(rf/dispatch [:set-timer-plus (* 60 -1)])
    keycodes/RIGHT #(rf/dispatch [:set-timer-plus (* 60 1)])
+   keycodes/UP    #(rf/dispatch [:set-timer-plus 1])
+   keycodes/DOWN  #(rf/dispatch [:set-timer-plus -1])
    keycodes/SPACE #(rf/dispatch [:timer-toggle])
    keycodes/ENTER #(rf/dispatch [:timer-start])})
 
@@ -140,28 +142,15 @@
   (let [target (.-currentTarget event) ; not .-target otherwise: Children!
         rect (.getBoundingClientRect target)
         touches (.-touches event)
-        event (if touches ;   if (evt.touches) { evt = evt.touches[0]; }
+        event (if touches
                 (aget touches 0)
                 event)
-        ;_ (js/alert (js-obj->clj-map event))
-        ;_ (js/alert (js-obj->clj-map touches))
-        ;_ (evt> [:user-event event])
-
-        ;_ (println "--------------------------------")
-        ;_ (println "size: " size)
         tx (.-left rect)
         ty (.-top rect)
-        ;_ (println "translate x y: " tx ty)
-        ;zx (/ (.-width rect) size)
-        ;zy (/ (.-height rect) size)
-        ;_ (println "zoom x y: " zx zy)
         xm (.-clientX event)
         ym (.-clientY event)
-        ;_ (println "raw mouse x y: " xm ym)
         x (* (- xm tx)  1 #_zx)
         y (* (- ym ty)  1 #_zy)]
-        ;_ (println "result x y: " x y)]
-
     {:x x :y y :height  (.-height rect) :width (.-width rect)}))
 
 ;;
@@ -190,12 +179,6 @@
                     (reset! dragging false))]
 
    (fn []
-     ;(println "drawing timer with: ")
-     ;(println "timer-remaining-ticks = "timer-remaining-ticks)
-     ;(println "timer-total-ticks = "timer-total-ticks)
-     ;(println "state = "state)
-
-
       [:div.timer-svg
         (when (not= @status :running)
          {:on-mouse-down (fn [event] (start-drag event))
@@ -213,33 +196,15 @@
           :on-click (fn [event]
                       ;(.preventDefault event)
                       (let [target (.-currentTarget event) ; not .-target otherwise: Children!
-                            rect (.getBoundingClientRect target)
-                            ;xm (.-clientX event)
-                            ;ym (.-clientY event)
-                            ;x (long (- xm (.-left rect)))
-                            ;y (long (- ym (.-top rect)))
                             data (get-mouse-x-y event #_size)]
-                            ;x (md :x)
-                            ;y (md :y)
-                            ;data {:x x :y y :height  (.-height rect) :width (.-width rect)}]
-                        ;(println)
-                        ;(println "xy-mouse: " x y)
-                        #_(println "(.getBoundingClientRect target):" (js-obj->clj-map rect))
-                        ;(println (js-obj->clj-map target))
-
-                        #_(println "mouse moved:"
-                                  data
-                                  #_(js-obj->clj-map event))
                         (rf/dispatch [:set-timer-percent
                                       (percentage (:width data)
                                                   (:height data)
                                                   (:x data)
-                                                  (:y data))])
-                        #_(reset! mouse-pos mouse-coordinates)))})
+                                                  (:y data))])))})
        (let [;; pixel ticks on the circle - in order to make it more lines
              scaled-duration-ticks          360
              scaled-remaining-ticks         (* @timer-remaining-ticks (/ scaled-duration-ticks @timer-duration-ticks))
-
              half                           (/ size 2)
              circle-fn                      (fn [t] (let [rad (-> t
                                                                   (* 2 Math/PI)
@@ -269,23 +234,16 @@
              scale-translate-duration       (str "translate(" half "," (- half (* 128 zoom500)) ")scale(" (* zoom500 2.8) ")")
              scale-translate-remaining-secs (str "translate(" half " " (+ half (* 80 zoom500)) ") scale(" (* zoom500 1.5) ")")
              remaining-secs                 (mod @timer-remaining-ticks 60)]
-             ;_ (println @timer-remaining-ticks)
-             ;_ (println remaining-secs)]
          [:svg {:background    "white"
                 :viewBox       "0 0 400 400"
                 :width         "100vw"
-                :height        "70vh"
-
-                #_:onLoad #_#(println "load svg")}
-          ;(println all-pos)
+                :height        "70vh"}
           (doall (for [[x y k] all-pos]
                    ^{:key k} [:line {:x1 half :y1 half :x2 x :y2 y :stroke
                                      (if (= @status :running) "red" "lightgrey") :stroke-width 1}]))
 
           [:circle {:r    (/ half 2), :cx half, :cy half,
                     :fill :white :stroke "red" :stroke-width (/ half 6)}]
-
-          #_(println remaining-secs)
           (when (>= (abs @timer-remaining-ticks) 60)
             [:text {:x                  0 :y 0
                     :text-anchor        "middle"
@@ -315,23 +273,8 @@
 
 ;; https://stackoverflow.com/questions/39831137/force-reagent-component-to-update-on-window-resize)
 
-#_(defn size-comp []
-    (r/with-let [size (r/atom nil)
-                 this (r/current-component)
-                 handler #(reset! size (get-client-rect (rdom/dom-node this)))
-                 _ (.addEventListener js/window "resize" handler)]
-                [:div "new size " @size]
-                (finally (.removeEventListener js/window "resize" handler))))
 
-#_(defn sized-timer [timer-remaining-ticks timer-duration-ticks]
-    (r/with-let [size (r/atom {:left 24, :top 148, :right 527, :bottom 172, :width 503, :height 24})
-                 this (r/current-component)
-                 handler #(reset! size (get-client-rect (rdom/dom-node this)))
-                 _ (.addEventListener js/window "resize" handler)]
-                ;(println size)
-                [timer 400 #_(max (:width @size) (:height @size)) timer-remaining-ticks timer-duration-ticks]
-                (finally (.removeEventListener js/window "resize" handler))))
-
+;; mobile audio forces to play on user interaction. Bäääh...
 (def alarm (atom nil))
 
 (defn stop-alarm
@@ -401,8 +344,8 @@
 
 (defn m20-button []
   [:a.button.is-light.mr-1.mt-1
-   {:on-click #(rf/dispatch [:set-timer-duration-and-remaining-secs (* 60 20)])}
-   [:span "20"]])
+   {:on-click #(rf/dispatch [:set-timer-duration-and-remaining-secs (* 60 25)])}
+   [:span "25"]])
 
 (defn m+5-button []
   [:a.button.is-light.mr-1.mt-1
@@ -423,6 +366,16 @@
   [:a.button.is-light.mr-1.mt-1
    {:on-click #(rf/dispatch [:set-timer-plus (* 60 1)])}
    [:span "+1"]])
+
+(defn m-1s-button []
+  [:a.button.is-light.mr-1.mt-1
+   {:on-click #(rf/dispatch [:set-timer-plus -1])}
+   [:span "-1s"]])
+
+(defn m+1s-button []
+  [:a.button.is-light.mr-1.mt-1
+   {:on-click #(rf/dispatch [:set-timer-plus 1])}
+   [:span "+1s"]])
 
 (defn sound-button []
   (let [timer-sound (sub [:timer-sound])]
@@ -493,13 +446,14 @@
             [bel-slider max-minutes duration running]])]]
 
        [:div.columns.is-centered
-        (let [remainingDisplay (if (> @remaining 60) (quot @remaining 60) (str @remaining "s"))
+        (let [remainingDisplay (if (> @remaining 60) (str (quot @remaining 60)":" (format-01 (mod @remaining 60)))
+                                                     (str @remaining "s"))
               durationDisplay (if (> @duration 60) (quot @duration 60) (str @duration "s"))]
           (if running
             [:div.column.is-full.has-text-centered [sound-button][stop-button][re-start-button durationDisplay]]
             [:div.column.is-full.has-text-centered
-             [sound-button][m-1-button][m-5-button][m20-button]
-             [m+5-button][m+1-button]
+             [sound-button][m-1s-button][m-1-button][m-5-button][m20-button]
+             [m+5-button][m+1-button][m+1s-button]
              [start-button durationDisplay]
              (when (and (not= @duration @remaining)
                         (> @remaining 0))
@@ -536,12 +490,13 @@
          [:div.column.is-full.has-text-centered
           [:p [:strong "Help"]]
           [:p "buttons, slider - set the total time."]
-          [:p "mouse, touch - set the current time."]
+          [:p "mouse drag, touch the circle - set the current time."]
           [:p "start - (re)starts from the total time set."]
           [:p "resume - does not restart from total but from current."]
           [:p "ENTER - (re)starts the timer"]
           [:p "SPACE - stops or resumes the timer"]
-          [:p "⬅️ ➡️ - increase or decrease total time by 1 minute"]]]
+          [:p "RIGHT/LEFT - increase or decrease total time by 1 minute"]
+          [:p "UP/DOWN - increase or decrease total time by 1 second"]]]
 
        [:br][:br]
 
