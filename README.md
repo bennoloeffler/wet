@@ -1,32 +1,12 @@
-#### TODOs
-
-- when running, remove the mouse drag on the timer, so that iOS can be moved up/down by drag
-- arrows: set the total time - and also the resume time
-- when jumping, set full minutes
-- when pressed SHIFT, used seconds. Otherwise, do minutes
-- prevent screensaver: https://www.educative.io/answers/how-to-keep-your-screen-awake-using-javascript
-- SPACE does not work on ios <-- --> do not work on ios
-- bug: does not play sound on ios, may be solved  
-  - by: interaction, when pressing start first time
-  - and: https://stackoverflow.com/questions/31776548/why-cant-javascript-play-audio-files-on-iphone-safari
-- use arc for visualisation
-- ok use a better sounds
-- slider off and time from bottom to top, when running
-- no: when time is up, show start as re-start button
-- remove bug when time is negative
-- have a big round button for moving the circle
-
 
 # wet - web-timer
-simple timer to be used in browser.
+Simple web timer to be used in browser, mobile, tablet, desktop.
 
 ## deployed here
-Current: github pages: https://bennoloeffler.github.io/wet/
-Legacy: https://bels-timer.bennoloeffler.repl.co/
-Legacy: https://replit.com/@bennoloeffler/timer
+github pages: https://bennoloeffler.github.io/wet/
 
 ## hints for css & sass
-https://bulma.io/documentation/customize/with-node-sass/
+https://bulma.io/documentation/customize/with-node-sass/  
 https://css-tricks.com/styling-cross-browser-compatible-range-inputs-css/
 
 ## dev
@@ -42,7 +22,6 @@ shadow-clj watch app
 ```
 localhost:3000
 ```
-
 
 ## Deploying for fast start (without fat jar and web server... just html, css, js)
 DEPLOY LIKE THAT (not yet automated :-( ):
@@ -64,3 +43,16 @@ DEPLOY LIKE THAT (not yet automated :-( ):
 
 1. commit at least the /doc folder and push to github
 ```cd doc && git add . && git commit -m "new release" && git push```
+
+## TODOs
+
+- when running, remove the mouse drag on the timer, so that iOS can be moved up/down by drag
+- arrows: set the total time - and also the resume time
+- when jumping, set full minutes
+- when pressed SHIFT, used seconds. Otherwise, do minutes
+- prevent screensaver: https://www.educative.io/answers/how-to-keep-your-screen-awake-using-javascript
+- SPACE does not work on ios <-- --> do not work on ios
+- use arc for visualisation
+- slider off and time from bottom to top, when running
+- have a big round button for moving the circle
+
