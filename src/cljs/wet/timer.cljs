@@ -153,6 +153,30 @@
         y (* (- ym ty)  1 #_zy)]
     {:x x :y y :height  (.-height rect) :width (.-width rect)}))
 
+
+
+;; mobile audio forces to play on user interaction. Bäääh...
+(def alarm (atom nil))
+
+(defn stop-alarm
+  []
+  (.load @alarm)
+  nil)
+
+(defn play-alarm
+  []
+  (.play @alarm)
+  nil)
+
+(defn init-audio
+  "start once on an interaction in order to replay afterwards on mobile browsers"
+  []
+  (when-not @alarm
+    (reset! alarm (js/Audio. "deep-meditation-bell.mp3" #_"Softchime.mp3"))
+    ;(set! (.. @alarm -loop) true)
+    (play-alarm)
+    (js/setTimeout #(stop-alarm) 10)))
+
 ;;
 ;; the visual UI only (without buttons and config components)
 ;;
@@ -176,36 +200,66 @@
                                              (:y data))]))))
         stop-drag (fn [event]
                     (.preventDefault event)
-                    (reset! dragging false))]
+                    (reset! dragging false))
+        in-inner (fn [event]
+                   (let [{:keys [x y height width]} (get-mouse-x-y event)]
+                     (let [half-x (/ width 2)
+                           half-y (/ height 2)
+                           half (min half-x half-y)
+                           dx (- x half-x)
+                           dy (- y half-y)
+                           r  (Math/sqrt (+ (* dx dx) (* dy dy)))
+                           in (<= r (* 0.4 half))]
+                       ;(println "in " in);", r " r ", half " half ", x " x ", y " y ", width " width ", height " height)
+                       in)))]
 
    (fn []
-      [:div.timer-svg
-        (when (not= @status :running)
-         {:on-mouse-down (fn [event] (start-drag event))
-          :on-touch-start (fn [event] #_(evt> [:user-event "touch start"])(start-drag event))
-
-          :on-mouse-move (fn [event] (drag event))
-          :on-touch-move (fn [event] #_(evt> [:user-event "touch move"])(drag event))
-
+      [:div
+        (if (not= @status :running)
+         {:class "timer-svg"
+          :on-mouse-down (fn [event] (when-not (in-inner event)
+                                       (start-drag event)))
+          :on-touch-start (fn [event] (when-not (in-inner event)
+                                        (start-drag event)))
+          :on-mouse-move (fn [event] (when-not (in-inner event)
+                                       (drag event)))
+          :on-touch-move (fn [event] (when-not (in-inner event)
+                                       (drag event)))
           :on-mouse-up (fn [event] (stop-drag event))
           :on-mouse-leave (fn [event] (stop-drag event))
-          :on-touch-end (fn [event] #_(evt> [:user-event "touch end"])(stop-drag event))
+          :on-touch-end (fn [event] (when-not (in-inner event)
+                                      (stop-drag event)))
           ;:on-touch-leave (fn [event] (stop-drag event)) unknown?
-          :on-touch-cancel (fn [event] #_(evt> [:user-event "touch cancel"])(stop-drag event))
+          :on-touch-cancel (fn [event] (when-not (in-inner event)
+                                         (stop-drag event)))
 
           :on-click (fn [event]
                       ;(.preventDefault event)
-                      (let [target (.-currentTarget event) ; not .-target otherwise: Children!
-                            data (get-mouse-x-y event #_size)]
-                        (rf/dispatch [:set-timer-percent
-                                      (percentage (:width data)
-                                                  (:height data)
-                                                  (:x data)
-                                                  (:y data))])))})
+                      (if (in-inner event)
+                        (rf/dispatch
+                          (do (init-audio)
+                              [:timer-resume]))
+                        (let [target (.-currentTarget event) ; not .-target otherwise: Children!
+                              data (get-mouse-x-y event #_size)]
+                          (rf/dispatch [:set-timer-percent
+                                        (percentage (:width data)
+                                                    (:height data)
+                                                    (:x data)
+                                                    (:y data))]))))}
+         {:on-click (fn [event]
+                      ;(.preventDefault event)
+                      (when (in-inner event)
+                        (rf/dispatch
+                          (do (stop-alarm)
+                              [:timer-stop]))))})
+
        (let [;; pixel ticks on the circle - in order to make it more lines
              scaled-duration-ticks          360
              scaled-remaining-ticks         (* @timer-remaining-ticks (/ scaled-duration-ticks @timer-duration-ticks))
              half                           (/ size 2)
+             xy-bubble                      (fn [x y]
+                                              [(+ x (* 0.2 (- half x)))
+                                               (+ y (* 0.2 (- half y)))])
              circle-fn                      (fn [t] (let [rad (-> t
                                                                   (* 2 Math/PI)
                                                                   (/ scaled-duration-ticks)
@@ -216,7 +270,7 @@
                                                        (+ half (* y1 half))
                                                        t]))
              all-ticks                      (range scaled-remaining-ticks)
-             all-pos                        (map circle-fn all-ticks)
+             all-pos                        (mapv circle-fn all-ticks)
              zoom500                        (/ size 500)
              scale-mins                     (* zoom500 ;; baseline text fits to size 500
                                                (condp >= @timer-remaining-ticks
@@ -233,7 +287,14 @@
              scale-translate-minutes        (str "translate(" half "," half ") scale(" scale-mins ")")
              scale-translate-duration       (str "translate(" half "," (- half (* 128 zoom500)) ")scale(" (* zoom500 2.8) ")")
              scale-translate-remaining-secs (str "translate(" half " " (+ half (* 80 zoom500)) ") scale(" (* zoom500 1.5) ")")
-             remaining-secs                 (mod @timer-remaining-ticks 60)]
+             remaining-secs                 (mod @timer-remaining-ticks 60)
+             [x-last-segment y-last-segment] (last all-pos)
+             [x-bubble y-bubble] (xy-bubble (or x-last-segment half)
+                                            (or y-last-segment 0))
+             play-size                      (* 0.05 size)
+             play-y                         (- half (* 3.3 play-size))
+             play-x                         (- half (/ play-size 2))]
+
          [:svg {:background    "white"
                 :viewBox       "0 0 400 400"
                 :width         "100vw"
@@ -243,7 +304,30 @@
                                      (if (= @status :running) "red" "lightgrey") :stroke-width 1}]))
 
           [:circle {:r    (/ half 2), :cx half, :cy half,
-                    :fill :white :stroke "red" :stroke-width (/ half 6)}]
+                    :fill :white :stroke :red :stroke-width (/ half 6)}]
+
+          (if (not= @status :running)
+            [:circle {:r    (/ half 11), :cx x-bubble, :cy y-bubble
+                      :fill :red}])
+
+
+          (if (not= @status :running)
+            [:polygon {:points (str (+ play-x 0) " " (+ play-y 0) " "
+                                    (+ play-x 0) " " (+ play-y play-size) " "
+                                    (+ play-x play-size) " " (+ play-y (/ play-size 2)))
+                       :fill :red
+                       :stroke :red
+                       :stroke-width 10
+                       :stroke-linecap :round
+                       :stroke-linejoin :round}]
+            [:rect {:x play-x :y play-y :width play-size
+                    :height play-size
+                    :fill :red
+                    :stroke :red
+                    :stroke-width 10
+                    :stroke-linecap :round
+                    :stroke-linejoin :round}])
+
           (when (>= (abs @timer-remaining-ticks) 60)
             [:text {:x                  0 :y 0
                     :text-anchor        "middle"
@@ -274,27 +358,6 @@
 ;; https://stackoverflow.com/questions/39831137/force-reagent-component-to-update-on-window-resize)
 
 
-;; mobile audio forces to play on user interaction. Bäääh...
-(def alarm (atom nil))
-
-(defn stop-alarm
-  []
-  (.load @alarm)
-  nil)
-
-(defn play-alarm
-  []
-  (.play @alarm)
-  nil)
-
-(defn init-audio
-  "start once on an interaction in order to replay afterwards on mobile browsers"
-  []
-  (when-not @alarm
-    (reset! alarm (js/Audio. "deep-meditation-bell.mp3" #_"Softchime.mp3"))
-    ;(set! (.. @alarm -loop) true)
-    (play-alarm)
-    (js/setTimeout #(stop-alarm) 10)))
 
 ;;
 ;; ALL buttons
