@@ -273,21 +273,22 @@
              all-pos                        (mapv circle-fn all-ticks)
              zoom500                        (/ size 500)
              scale-mins                     (* zoom500 ;; baseline text fits to size 500
-                                               (condp >= @timer-remaining-ticks
+                                               (condp >= (quot @timer-remaining-ticks 60)
                                                  -10000 3
                                                  -1000 3
-                                                 -100 6
-                                                 -10 8
-                                                 -1 10
-                                                 9 13
-                                                 99 9
-                                                 999 7
+                                                 -100 4
+                                                 -10 5
+                                                 -1 8
+                                                 9 8
+                                                 99 7
+                                                 999 6
                                                  9999 5
                                                  3))
              scale-translate-minutes        (str "translate(" half "," half ") scale(" scale-mins ")")
              scale-translate-duration       (str "translate(" half "," (- half (* 128 zoom500)) ")scale(" (* zoom500 2.8) ")")
              scale-translate-remaining-secs (str "translate(" half " " (+ half (* 80 zoom500)) ") scale(" (* zoom500 1.5) ")")
              remaining-secs                 (mod @timer-remaining-ticks 60)
+             _ (println @timer-remaining-ticks)
              [x-last-segment y-last-segment] (last all-pos)
              [x-bubble y-bubble] (xy-bubble (or x-last-segment half)
                                             (or y-last-segment 0))
