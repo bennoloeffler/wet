@@ -177,6 +177,54 @@
     (play-alarm)
     (js/setTimeout #(stop-alarm) 10)))
 
+
+(defn play-icon [play-x play-y play-size]
+  [:polygon {:points (str (+ play-x 0) " " (+ play-y 0) " "
+                          (+ play-x 0) " " (+ play-y play-size) " "
+                          (+ play-x play-size) " " (+ play-y (/ play-size 2)))
+             :fill :red
+             :stroke :red
+             :stroke-width (/ play-size 3)
+             :stroke-linecap :round
+             :stroke-linejoin :round}])
+
+(defn re-play-icon [play-x play-y play-size]
+
+  (let [radius (/ play-size 1.3)
+        circumference (* 2  js/Math.PI  radius)
+        stroke-offset 0 #_(* circumference (/ 1 4))
+        stroke-dasharray (* circumference (/ 270 360))]
+    [:<>
+     [:circle {:r radius :cx play-x :cy 57
+               :fill :transparent
+               :stroke :red
+               :stroke-width (/ play-size 2)
+               :stroke-dasharray (str stroke-dasharray " " (- circumference stroke-dasharray))
+               :stroke-dashoffset stroke-offset
+               :stroke-linecap :round
+               :stroke-linejoin :round}]
+     [:polygon {:points (str (+ play-x 0) " " (+ play-y 0) " "
+                             (+ play-x 0) " " (+ play-y play-size) " "
+                             (+ play-x play-size) " " (+ play-y (/ play-size 2)))
+                :fill :red
+                :stroke :red
+                :stroke-width (/ play-size 3)
+                :stroke-linecap :round
+                :stroke-linejoin :round}]]))
+
+
+(defn stop-icon [play-x play-y play-size]
+  [:rect {:x play-x :y play-y
+          :width play-size
+          :height play-size
+          :fill :red
+          :stroke :red
+          :stroke-width (/ play-size 3)
+          :stroke-linecap :round
+          :stroke-linejoin :round}])
+
+
+
 ;;
 ;; the visual UI only (without buttons and config components)
 ;;
@@ -274,15 +322,15 @@
              zoom500                        (/ size 500)
              scale-mins                     (* zoom500 ;; baseline text fits to size 500
                                                (condp >= (quot @timer-remaining-ticks 60)
-                                                 -10000 3
-                                                 -1000 3
-                                                 -100 4
-                                                 -10 5
-                                                 -1 8
-                                                 9 8
+                                                 -10000 4
+                                                 -1000 4
+                                                 -100 5
+                                                 -10 6
+                                                 -1 7
+                                                 9 7
                                                  99 7
                                                  999 6
-                                                 9999 5
+                                                 9999 4
                                                  3))
              scale-translate-minutes        (str "translate(" half "," half ") scale(" scale-mins ")")
              scale-translate-duration       (str "translate(" half "," (- half (* 128 zoom500)) ")scale(" (* zoom500 2.8) ")")
@@ -313,21 +361,8 @@
 
 
           (if (not= @status :running)
-            [:polygon {:points (str (+ play-x 0) " " (+ play-y 0) " "
-                                    (+ play-x 0) " " (+ play-y play-size) " "
-                                    (+ play-x play-size) " " (+ play-y (/ play-size 2)))
-                       :fill :red
-                       :stroke :red
-                       :stroke-width 10
-                       :stroke-linecap :round
-                       :stroke-linejoin :round}]
-            [:rect {:x play-x :y play-y :width play-size
-                    :height play-size
-                    :fill :red
-                    :stroke :red
-                    :stroke-width 10
-                    :stroke-linecap :round
-                    :stroke-linejoin :round}])
+            [play-icon play-x play-y play-size]
+            [stop-icon play-x play-y play-size])
 
           (when (>= (abs @timer-remaining-ticks) 60)
             [:text {:x                  0 :y 0
@@ -365,31 +400,58 @@
 ;;
 
 (defn start-button [durationDisplay]
-  [:a.button.is-primary.is-light.mr-1.mt-1
+  [:a.button.mr-1.mt-1
    {:on-click #(do (init-audio)
                    (rf/dispatch [:timer-start]))}
-   [:span (str "start: " durationDisplay)]])
+   [:span.icon-text
+    [:span.icon
+     (let [play-x 50
+           play-y 7
+           play-size 40]
+       [:svg {:width "100%" :height "100%" :viewBox "0 0 100 100" #_"currentColor"}
+        [re-play-icon play-x play-y play-size]])]
+    [:span (str #_"s: " durationDisplay)]]])
+
 
 (defn re-start-button [durationDisplay]
-  [:a.button.is-primary.is-light.mr-1.mt-1
+  [:a.button.mr-1.mt-1
    {:on-click #(do (stop-alarm)
-                   (rf/dispatch [:timer-re-start
-                                 (if (str/ends-with? durationDisplay "s")
-                                   (js/parseInt (str/replace durationDisplay #"s" ""))
-                                   (* 60 (js/parseInt durationDisplay)))]))}
-   [:span (str "re-start: " durationDisplay)]])
+                   (rf/dispatch [:timer-re-start]))}
+   [:span.icon-text
+    [:span.icon
+     (let [play-x 50
+           play-y 7
+           play-size 40]
+       [:svg {:width "100%" :height "100%" :viewBox "0 0 100 100" :fill :red #_"currentColor"}
+        [re-play-icon play-x play-y play-size]])]
+    [:span (str durationDisplay)]]])
 
 (defn stop-button []
-  [:a.button.is-danger.is-light.mr-1.mt-1
+  [:a.button.mr-1.mt-1
    {:on-click #(do (stop-alarm)
                    (rf/dispatch [:timer-stop]))}
-   [:span "stop"]])
+   [:span.icon-text
+    [:span.icon
+     (let [play-x 10
+           play-y 12
+           play-size 20]
+       [:svg {:width "100%" :height "100%" :viewBox "0 0 40 40" :fill :red #_"currentColor"}
+        [stop-icon play-x play-y play-size]])]]])
+
 
 (defn resume-button [remainingDisplay]
-  [:a.button.is-primary.is-light.mr-1.mt-1
+  [:a.button.mr-1.mt-1
    {:on-click #(do (init-audio)
                    (rf/dispatch [:timer-resume]))}
-   [:span (str "resume: " remainingDisplay)]])
+   [:span.icon-text
+    [:span.icon
+     (let [play-x 10
+           play-y 12
+           play-size 20]
+       [:svg {:width "100%" :height "100%" :viewBox "0 0 40 40" :fill :red #_"currentColor"}
+        [play-icon play-x play-y play-size]])]
+    [:span (str #_"r: " remainingDisplay)]]])
+
 
 (defn m1-button []
   [:a.button.is-light.mr-1.mt-1
@@ -406,10 +468,10 @@
    {:on-click #(rf/dispatch [:set-timer-duration-and-remaining-secs (* 60 10)])}
    [:span "10"]])
 
-(defn m20-button []
-  [:a.button.is-light.mr-1.mt-1
+(defn m25-button []
+  [:a.button.mr-1.mt-1
    {:on-click #(rf/dispatch [:set-timer-duration-and-remaining-secs (* 60 25)])}
-   [:span "25"]])
+   [:span [:b "25"]]])
 
 (defn m+5-button []
   [:a.button.is-light.mr-1.mt-1
@@ -510,13 +572,16 @@
             [bel-slider max-minutes duration running]])]]
 
        [:div.columns.is-centered
-        (let [remainingDisplay (if (> @remaining 60) (str (quot @remaining 60)":" (format-01 (mod @remaining 60)))
-                                                     (str @remaining "s"))
-              durationDisplay (if (> @duration 60) (quot @duration 60) (str @duration "s"))]
+        (let [display-time (fn [secs]
+                             (if (> secs 60)
+                               (str (quot secs 60)":" (format-01 (mod secs 60)))
+                               (str secs "s")))
+              remainingDisplay (display-time @remaining)
+              durationDisplay (display-time @duration)]
           (if running
             [:div.column.is-full.has-text-centered [sound-button][stop-button][re-start-button durationDisplay]]
             [:div.column.is-full.has-text-centered
-             [sound-button][m-1s-button][m-1-button][m-5-button][m20-button]
+             [sound-button][m-1s-button][m-1-button][m-5-button][m25-button]
              [m+5-button][m+1-button][m+1s-button]
              [start-button durationDisplay]
              (when (and (not= @duration @remaining)
@@ -633,6 +698,15 @@
             (update :timer-remaining-secs #(+ % secs)))
         db))))
 
+(rf/reg-event-db
+  :reset-timer-remaining-secs
+  (fn [db [_ secs]]
+    (let [start (or (:timer-start db)
+                    (js/Date.))
+          remain (db :timer-duration-secs)]
+      (-> db
+           (assoc :timer-remaining-secs remain)
+           (assoc :timer-start start)))))
 
 (rf/reg-event-db
   :set-timer-duration-and-remaining-secs
@@ -660,7 +734,13 @@
 (rf/reg-event-db
   :timer-resume
   (fn [db [_ secs]]
-    (assoc db :timer-state :running)))
+
+    (let [start (or (:timer-start db)
+                    (js/Date.))]
+          ;remain (db :timer-duration-secs)]
+      (-> db
+          (assoc :timer-state :running)
+          (assoc :timer-start start)))))
 
 
 (rf/reg-event-db
@@ -672,9 +752,9 @@
 
 (rf/reg-event-fx
   :timer-re-start
-  (fn [_ [_ secs]]
+  (fn [_ _]
     {:fx [[:dispatch [:timer-stop]]
-          [:dispatch [:set-timer-duration-and-remaining-secs secs]]
+          [:dispatch [:reset-timer-remaining-secs]]
           [:dispatch [:timer-start]]]}))
 
 
